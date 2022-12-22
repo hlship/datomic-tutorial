@@ -1,0 +1,7 @@
+{:paths ["src" "resources" ]
+ :deps {com.datomic/datomic-pro {:mvn/version "1.0.6527"}
+        io.aviso/pretty {:mvn/version "1.3"}
+        io.github.hlship/trace {:mvn/version "v1.0"}
+        io.aviso/logging {:mvn/version "1.0"}
+        org.clojure/data.csv {:mvn/version "1.0.1"}
+        }}
