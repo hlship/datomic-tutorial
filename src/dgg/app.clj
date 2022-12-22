@@ -48,6 +48,7 @@ A player can win 7 Wonders Duel in one of three ways: each time you acquire a mi
        :where
        [?id :game/title ?title]
        [?id :bgg/id ?b-id]
+       ;; Only matches IF the matched entity has these two attributes
        [?id :game/summary ?summ]
        [?id :game/description ?desc]]
      db "7 Wonders Duel")
