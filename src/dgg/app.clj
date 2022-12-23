@@ -4,17 +4,15 @@
             [dgg.import-csv :as csv]
             [datomic.api :as d :refer [q]]))
 
-
 (defn- tx [tx-data]
   @(d/transact conn tx-data))
 
-(comment
+(defn start-fresh
+  []
   (d/create-database conn/db-uri)
   (conn/startup)
 
-
   (schema/transact-schema conn)
-
 
   (tx (csv/read-collection "hlship-bgg-collection.csv"))
 
@@ -32,27 +30,4 @@ Players can purchase resources at any time from the bank, or they can gain cards
 
 A player can win 7 Wonders Duel in one of three ways: each time you acquire a military card, you advance the military marker toward your opponent's capital, giving you a bonus at certain positions; if you reach the opponent's capital, you win the game immediately; similarly, if you acquire any six of seven different scientific symbols, you achieve scientific dominance and win immediately; if none of these situations occurs, then the player with the most points at the end of the game wins.
 "}]
-      )
-
-  (def db (d/db conn))
-
-  (q '[:find ?bgg-id ?title
-       :in $
-       :where
-       [?id :bgg/id ?bgg-id]
-       [?id :game/title ?title]]
-     db)
-
-  (q '[:find ?b-id ?summ ?desc
-       :in $ ?title
-       :where
-       [?id :game/title ?title]
-       [?id :bgg/id ?b-id]
-       ;; Only matches IF the matched entity has these two attributes
-       [?id :game/summary ?summ]
-       [?id :game/description ?desc]]
-     db "7 Wonders Duel")
-
-  (conn/shutdown)
-
-  )
+      ))
