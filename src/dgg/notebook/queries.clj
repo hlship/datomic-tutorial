@@ -4,8 +4,7 @@
   (:require [dgg.app :as app]
             [dgg.conn :refer [conn]]
             [datomic.api :as d :refer [q]]
-            [nextjournal.clerk :as clerk])
-  (:import (java.util.jar Attributes)))
+            [nextjournal.clerk :as clerk]))
 
 (app/start-fresh)
 
@@ -57,7 +56,7 @@
      :where
      [?id :bgg/id ?b-id]
      [?id :game/title ?title]]
-     db)
+   db)
 
 ;; This time, each :bgg/id is matched against the corresponding :game/title.
 
@@ -92,7 +91,7 @@
 ;; # Defaults For Missing Attributes
 
 ;; So far, we've only seen literal values (such as :bgg/id or :game/title) or query variables (such as `?id` or
-;;`?title` in the where clauses, but that isn't the only option.  Datomic supports function calls as part of
+;;`?title` in the where clauses, but that isn't the only option.  Datomic supports certain functions as part of
 ;; a query clause as well.
 
 ;; The `get-else` function is used to locate an attribute of a specific entity, supplying a default value
@@ -101,13 +100,67 @@
 (clerk/table
   (vec
     (q '[:find ?b-id ?title ?summary
-                  :in $
-                  :where
-                  [?id :bgg/id ?b-id]
-                  [(get-else $ ?id :game/title "") ?title]
-                  [(get-else $ ?id :game/summary "") ?summary]]
-                  db)))
+         :in $
+         :where
+         [?id :bgg/id ?b-id]
+         [(get-else $ ?id :game/title "") ?title]
+         [(get-else $ ?id :game/summary "") ?summary]]
+       db)))
 
-;; `get-else` is _built in_ to Datomic so there isn't a need to require a namespace to access it.
+;; `get-else` is [built in](https://docs.datomic.com/on-prem/query/query.html#built-in-expressions) to Datomic so there isn't a need to require a namespace to access it.
 ;; However, you'll notice the new :in clause; this is used make the supplied Database, `db`, available inside the
 ;; query; it's the first argument to `get-else`.  The use of `$` for this variable is idiomatic.
+
+;; > The :in clause is not actually needed here; if you omit the :in clause entirely, the db is _still_ exposed as `$`.
+
+;; ## Pull Syntax
+
+;; Matching many individual attributes just to include them in the :find clause can bet
+;; tedious; further, we often want to get back a populated _map_ rather than a vector of _values.
+;; The pull syntax allows you to just match on Datomic entity id, and gather in
+;; whatever you need.
+
+;; Let's build a query that gather's useful information about a game based on its title.
+
+(q '[:find  (pull ?e [:db/id :bgg/id :game/title :game/summary])
+     :in $ ?title
+     :where [?e :game/title ?title]]
+   db "Tak")
+
+;; Some things to note: The :in clause matches the arguments to `q` to local variables and query variables.
+
+;; The :where clause matches the provided `?title` and binds the `?e` variable, which can then be used in the
+;; :find clause.
+
+;; The `pull` function is very tolerant of attributes that don't exist for the entity.  "Tak"
+;; doesn't have a :game/summary, so that key is simply omitted from the result map (which is very different
+;; from supplying a default value, as with `get-else`).
+
+;; > You can provide multiple `pull`s, but each query variable may only appear _once_ in the
+;; :find clause, or an ArrayIndexOutOfBoundsException is thrown.
+
+;; There's [a lot more to pull syntax](https://docs.datomic.com/on-prem/query/pull.html#pull-pattern-grammar), so let's set up some helpers.
+
+(defn title-query
+  [db title pattern]
+  (->> (q '[:find (pull ?e pull-pattern)
+            :in $ ?title pull-pattern
+            :where [?e :game/title ?title]]
+          db title pattern)
+       ;; Each pull results in a single map inside a vector, so un-nest the map.
+       (mapv first)
+       clerk/table))
+
+(title-query db "Codenames" [:bgg/id :game/min-players :game/max-players])
+
+;; One thing we can do with pull expressions is replace a attribute id with a vector that
+;; provides more details on what to do with that attribute id.
+
+(title-query db "Codenames" [:bgg/id
+                             [:game/min-players :as :min-players]
+                             [:game/max-players :as :max-players]
+                             [:game/summary :default "N/A" :as :summary]])
+
+;; The :as option renames the key used when constructing the entity map.
+;; The :default option provides a default value when the attribute doesn't exist; previously
+;; we used `get-else` for this behavior.
