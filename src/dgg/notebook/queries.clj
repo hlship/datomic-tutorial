@@ -1,10 +1,13 @@
 ;; # Datomic Queries
 
+^{:nextjournal.clerk/toc true}
 (ns dgg.notebook.queries
   (:require [dgg.app :as app]
             [dgg.conn :refer [conn]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
+
+;; Start a fresh copy of an in-memory database.
 
 (app/start-fresh)
 
@@ -88,7 +91,7 @@
 ;; :bgg/id and try again.  The results are only for queries where it can simultaneously satisfy _all_
 ;; of the query clauses, and that's just a single entity in this case.
 
-;; # Defaults For Missing Attributes
+;; ## Defaults For Missing Attributes
 
 ;; So far, we've only seen literal values (such as :bgg/id or :game/title) or query variables (such as `?id` or
 ;;`?title` in the where clauses, but that isn't the only option.  Datomic supports certain functions as part of
@@ -122,7 +125,7 @@
 
 ;; Let's build a query that gather's useful information about a game based on its title.
 
-(q '[:find  (pull ?e [:db/id :bgg/id :game/title :game/summary])
+(q '[:find (pull ?e [:db/id :bgg/id :game/title :game/summary])
      :in $ ?title
      :where [?e :game/title ?title]]
    db "Tak")
@@ -153,7 +156,7 @@
 
 (title-query db "Codenames" [:bgg/id :game/min-players :game/max-players])
 
-;; One thing we can do with pull expressions is replace a attribute id with a vector that
+;; One thing we can do with pull expressions is replace an attribute id with a vector that
 ;; provides more details on what to do with that attribute id.
 
 (title-query db "Codenames" [:bgg/id
