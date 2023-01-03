@@ -14,6 +14,7 @@
 (defn- xform-csv
   [raw]
   (-> raw
+      ;; Note: the publisherid column is inaccurate, alas
       (select-keys [:objectname
                     :minplayers
                     :maxplayers

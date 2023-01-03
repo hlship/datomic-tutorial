@@ -1,0 +1,10 @@
+;; Identifies a small subset of publishers and the games they publish.
+[{:id    157
+  :name  "Asmodee"
+  :games [178900 173346]}
+ {:id    12
+  :name  "Cheapass Games"
+  :games [197405]}
+ {:id    33238
+  :name  "James Ernest Games"
+  :games [197405]}]
