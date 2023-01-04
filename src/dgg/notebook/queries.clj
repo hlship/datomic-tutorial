@@ -249,9 +249,16 @@
 
 ;; ### Wildcards
 
+;; Datomic queries support wildcards, which are primarily useful when exploring data
+;; at the REPL:
+
 (title-query db "Tak" '[*])
 
-;; The `*` path matches all _attributes_; it understands entity refs, those are represented
+;; The `*` pattern matches all _attributes_; it understands entity refs, those are represented
 ;; as a seq of maps, but each map only contains a `:db/id` attribute.
+
+
+;; The `*` wildcard can also be used when navigating into a relationship, where it selects
+;; all attributes of the target entity of the relationship.
 
 (title-query db "Tak" '[:game/title {:game/publisher [*]}])
