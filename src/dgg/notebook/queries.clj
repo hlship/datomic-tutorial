@@ -20,7 +20,7 @@
 
 ;; ## Simple Query
 
-;; This finds all ids and all titles and returns a set of all those ids and tuples.
+;; This finds all ids and all titles and returns an unordered seq of all those ids and tuples.
 
 (q '[:find ?game-id ?title
      :where
@@ -73,16 +73,30 @@
 ;;
 ;; Eventually, it runs out of :bgg/id values and the query is complete.
 
+;; We can make this output more pleasing with a helper:
+
+(defn tq [query & more]
+  (-> (apply q query more)
+      vec
+      clerk/table))
+
+;; Now we can get _tabular_ query results.  Of course, that's useful in a Clerk notebook, not
+;; in a real application.
+
+(tq '[:find ?game-id ?title
+     :where
+     [?id :bgg/id ?game-id]
+     [?id :game/title ?title]]
+   db)
+
 ;; ## Missing Attributes
 
-(clerk/table
-  (vec
-    (q '[:find ?game-id ?title ?summary
-         :where
-         [?id :bgg/id ?game-id]
-         [?id :game/title ?title]
-         [?id :game/summary ?summary]]
-       db)))
+(tq '[:find ?game-id ?title ?summary
+      :where
+      [?id :bgg/id ?game-id]
+      [?id :game/title ?title]
+      [?id :game/summary ?summary]]
+    db)
 
 ;; This query only matches one entity, because `start-fresh` only transacts the summary and description for a single
 ;; game entity. Still, this raises an important point, because it is unlike a rows-and-columns SQL approach.
@@ -104,16 +118,14 @@
 ;; The `get-else` function is used to locate an attribute of a specific entity, supplying a default value
 ;; if the Datom does not exist.
 
-(clerk/table
-  (vec
-    (q '[:find ?game-id ?title ?summary ?description
-         :in $
-         :where
-         [?id :bgg/id ?game-id]
-         [?id :game/title ?title]
-         [(get-else $ ?id :game/summary "") ?summary]
-         [(get-else $ ?id :game/description "") ?description]]
-       db)))
+(tq '[:find ?game-id ?title ?summary ?description
+      :in $
+      :where
+      [?id :bgg/id ?game-id]
+      [?id :game/title ?title]
+      [(get-else $ ?id :game/summary "") ?summary]
+      [(get-else $ ?id :game/description "") ?description]]
+    db)
 
 ;; > You'll may need to click `More` a few times to get the **7 Wonders Duel**, which has a summary and description.
 ;; > This table layout  isn't ideal.
@@ -126,16 +138,14 @@
 
 ;; ## Relationships
 
-(clerk/table
-  (vec
-    (q '[:find ?game-id ?title ?publisher-name
-         :in $ ?title
-         :where
-         [?id :game/title ?title]
-         [?id :bgg/id ?game-id]
-         [?id :game/publisher ?pub-id]
-         [?pub-id :publisher/name ?publisher-name]]
-       db "Tak")))
+(tq '[:find ?game-id ?title ?publisher-name
+      :in $ ?title
+      :where
+      [?id :game/title ?title]
+      [?id :bgg/id ?game-id]
+      [?id :game/publisher ?pub-id]
+      [?pub-id :publisher/name ?publisher-name]]
+    db "Tak")
 
 ;; "Tak", like many games, has had a number of publishers over time; our sample data includes two.
 ;; We've expressed the relationship by finding the :game/publisher attribute to `?pub-id`.  :game/publisher
@@ -156,15 +166,13 @@
 ;; In the prior example, `?title` was bound to a single value.  Datomic can repeatedly bind a variable to a sequence
 ;; of values:
 
-(clerk/table
-  (vec
-    (q '[:find ?game-id ?title ?max-players
-         :in $ [?title ...]
-         :where
-         [?id :bgg/id ?game-id]
-         [?id :game/max-players ?max-players]
-         [?id :game/title ?title]]
-       db ["Tak" "Codenames"])))
+(tq '[:find ?game-id ?title ?max-players
+      :in $ [?title ...]
+      :where
+      [?id :bgg/id ?game-id]
+      [?id :game/max-players ?max-players]
+      [?id :game/title ?title]]
+    db ["Tak" "Codenames"])
 
 
 ;; The special syntax `[?title ...]` informs Datomic that this is a multi-valued binding to
@@ -179,7 +187,7 @@
 
 ;; Let's build a query that gather's useful information about a game based on its title.
 
-(q '[:find (pull ?e [:db/id :bgg/id :game/title :game/summary])
+(tq '[:find (pull ?e [:db/id :bgg/id :game/title :game/summary])
      :in $ ?title
      :where [?e :game/title ?title]]
    db "Tak")
@@ -199,7 +207,7 @@
 ;; There's [a lot more to pull syntax](https://docs.datomic.com/on-prem/query/pull.html#pull-pattern-grammar),
 ;; to explore, so let's first set up some helpers.
 
-(defn title-query
+(defn tq-by-title
   [db title pattern]
   (->> (q '[:find (pull ?e pull-pattern)
             :in $ ?title pull-pattern
@@ -209,23 +217,25 @@
        (mapv first)
        clerk/table))
 
-(title-query db "Codenames" [:bgg/id :game/min-players :game/max-players])
+(tq-by-title db "Codenames" [:bgg/id :game/min-players :game/max-players])
 
 ;; This new `title-query` function makes it easy to match an entity by its :game/title, then make use of
 ;; the provided pull pattern.
+
+;; Also, since Clerk is given a vector of maps, it can use the map keys as the table column headers.
 
 ;; ### Relationships
 
 ;; Pull patterns can be maps; the keys of the map indicate what relationship to traverse,
 ;; and the value is a sub-pattern to run on the entity traversed to.
 
-(title-query db "Codenames" [:bgg/id :game/title {:game/publisher [:bgg/id :publisher/name]}])
+(tq-by-title db "Codenames" [:bgg/id :game/title {:game/publisher [:bgg/id :publisher/name]}])
 
 ;; The fetched Publisher data is not flattened into two columns, it is a seq of maps as a single value.
 
 ;; Tak is more interesting, as it has multiple publishers:
 
-(title-query db "Tak" [:bgg/id :game/title {:game/publisher [:bgg/id :publisher/name ]}])
+(tq-by-title db "Tak" [:bgg/id :game/title {:game/publisher [:bgg/id :publisher/name]}])
 
 ;; This makes it clear that the third column value is a seq of maps ... and that's likely
 ;; a better representation for your application than the previous approach at getting the
@@ -238,7 +248,7 @@
 ;; One thing we can do with pull expressions is replace an attribute id with a vector that
 ;; provides more details on what to do with that attribute id.
 
-(title-query db "Codenames" [:bgg/id
+(tq-by-title db "Codenames" [:bgg/id
                              [:game/min-players :as :min-players]
                              [:game/max-players :as :max-players]
                              [:game/summary :default "N/A" :as :summary]])
@@ -252,7 +262,7 @@
 ;; Datomic queries support wildcards, which are primarily useful when exploring data
 ;; at the REPL:
 
-(title-query db "Tak" '[*])
+(tq-by-title db "Tak" '[*])
 
 ;; The `*` pattern matches all _attributes_; it understands entity refs, those are represented
 ;; as a seq of maps, but each map only contains a `:db/id` attribute.
@@ -261,4 +271,4 @@
 ;; The `*` wildcard can also be used when navigating into a relationship, where it selects
 ;; all attributes of the target entity of the relationship.
 
-(title-query db "Tak" '[:game/title {:game/publisher [*]}])
+(tq-by-title db "Tak" '[:game/title {:game/publisher [*]}])
