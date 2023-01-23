@@ -36,8 +36,11 @@
 ;; Datomic queries work by matching the values in the Datoms against the query clauses.
 
 ;; The variables, `?game-id` and `?title` are special (the leading `?` is important). Variables are either bound
-;; or unbound.  When an unbound variable is matched against a Datom, it binds to the value at that position (the entity,
+;; or unbound.
+;;
+;; When an unbound variable is matched against a Datom, it binds to the value at that position (the entity,
 ;; attribute, or value) in the Datom.
+
 ;; When a bound variable is matched against a Datom, its bound value must actually match the Datom value at
 ;; that position; when it doesn't match, Datomic must backtrack to find a prior clause that can still match.
 
@@ -100,12 +103,13 @@
 
 ;; This query only matches one entity, because `start-fresh` only transacts the summary and description for a single
 ;; game entity. Still, this raises an important point, because it is unlike a rows-and-columns SQL approach.
-;; For all the entities for which no :game/summary has been transacted, the attribute
-;; is not nil, it is missing entirely. There simply aren't Datoms for Datomic to match against.
+;; For all the entities for which no :game/summary has been transacted, the :game/summary attribute
+;; is not nil; it is missing entirely. There simply aren't Datoms for Datomic to match against.
 
-;; In a rows-and-columns world, each row will have some value for each column, whether it's a null or a default value.
+;; In a rows-and-columns world, each row will have some value for each column, whether it's a null, or a default value.
 
-;; Datomic will hit that third where clause and backtrack to the first clause, where it will match a new
+;; Datomic will hit that third where clause and (except for that one example) be unable to find a matching Datomc;
+;; Datomic will then backtrack to the first clause, where it will match a new
 ;; :bgg/id and try again.  The results are only for queries where it can simultaneously satisfy _all_
 ;; of the query clauses, and that's just a single entity in this case.
 
@@ -132,7 +136,7 @@
 
 ;; `get-else` is [built in](https://docs.datomic.com/on-prem/query/query.html#built-in-expressions) to Datomic so there isn't a need to require a namespace to access it.
 ;; However, you'll notice the new :in clause; this is used make the supplied Database, `db`, available inside the
-;; query; it's the first argument to `get-else`.  The use of `$` for this variable is idiomatic.
+;; query; it's the first argument to `get-else`.  The use of `$` as the name for this variable is idiomatic.
 
 ;; > The :in clause is not actually needed here; if you omit the :in clause entirely, the db is _still_ exposed as `$`.
 
@@ -148,13 +152,17 @@
     db "Tak")
 
 ;; "Tak", like many games, has had a number of publishers over time; our sample data includes two.
-;; We've expressed the relationship by finding the :game/publisher attribute to `?pub-id`.  :game/publisher
+;; We've expressed the relationship by binding the :game/publisher attribute to `?pub-id`.  :game/publisher
 ;; is a :db.type/ref, a reference to another entity in the database.  Then we can use `?pub-id` in the
 ;; entity id column of the next query clause, and the same binding rules work to ensure that the :publisher/name
 ;; from the correct entity is selected.
 
-;; The "Tak" entity has multiple Datoms for the :publisher/name attribute, so the query is succesful for
-;; both of them.
+;; The "Tak" entity has multiple Datoms for the :game/publisher attribute, so the query is successful for
+;; both of them.  That is, Datomic reaches the end of the :where clauses, so it emits a result; it then backtracks.
+;; Datomic won't find another :publisher/name for the `?pub-id` entity (because that attribute has a cardinality of one),
+;; but Datomic will find a new binding for `?pub-id` in the `[?id :game/publisher ?pub-id]` clause (:game/publisher
+;; has a cardinality of many); this also eventually succeeds, so a second result is added.
+;; Further backtracking finds no further bindings, and the query execution ends.
 
 ;; We don't have to say that an entity is a Publisher any more than we previously had to say that a game is
 ;; Game.  The "type" of an entity is am emergent property: if it has the right subset of attributes, then
