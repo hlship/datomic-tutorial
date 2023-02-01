@@ -8,4 +8,4 @@
 #_ (set! *print-meta* true)
 (set! *warn-on-reflection* true)
 
-(trace/trace :startup true)
+(trace :startup true)

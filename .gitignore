@@ -1,1 +1,6 @@
 /.clerk/
+/mbrainz-1968-1973/
+/mbrainz.tar
+datomic-pro*
+datomic
+transactor.properties

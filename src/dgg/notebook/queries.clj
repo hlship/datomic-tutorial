@@ -2,81 +2,61 @@
 
 ^{:nextjournal.clerk/toc true}
 (ns dgg.notebook.queries
-  (:require [dgg.app :as app]
-            [dgg.conn :refer [conn]]
+  (:require [dgg.conn :as conn :refer [conn]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
 
-;; Start a fresh copy of an in-memory database.
-
-(app/start-fresh)
-
 ;; ## Get a database
 
-;; The database instance is an immutable view of the live database at a point in time.
-;; Further updates to the persistent database are invisible to this local reference.
+(conn/startup)
 
 (def db (d/db conn))
 
 ;; ## Simple Query
 
-;; This finds all ids and all titles and returns an unordered seq of all those ids and tuples.
+;; Let's start with a simple query; we'll find every release, returning the release's global id and name,
+;; and Datomic's id for each match.
 
-(q '[:find ?game-id ?title
+(q '[:find ?e ?gid ?name
      :where
-     [_ :bgg/id ?game-id]
-     [_ :game/title ?title]]
+     [?e :release/name ?name]
+     [?e :release/gid ?gid]]
    db)
 
-;; Each where clause identifies an _entity_, an _attribute_, and a _value_.  The entity is the
-;; Datomic-provided id, a long.  The attribute must correspond to an attribute previously transacted into the
-;; Datomic database's schema (itself stored as Datoms in the database).  The value is of a type
-;; appropriate for the attribute, following its schema type: a string, a long, and so forth.
+;; This returns over eleven thousand results!
 
-;; Datomic queries work by matching the values in the Datoms against the query clauses.
+;; So let's break down what the above code does.
+;; A query consists of a list of terms; the query always needs at least one :find term and at least one :where term.
 
-;; The variables, `?game-id` and `?title` are special (the leading `?` is important). Variables are either bound
-;; or unbound.
-;;
+;; :find identifies what will be returned on each successful query: the Datomic entity id,
+;; the release's global id (gid) and name.
+
+;; Datomic queries operate by matching the values in the Datoms against the query clauses.
+
+;; A Datom consist of ordered slots; the first slot is the _entity_,
+;; followed by the _attribute_, and then the _value_.
+
+;; The entity is the Datomic-provided id, a long.
+;; The attribute must correspond to an attribute previously transacted into the
+;; Datomic database's schema (itself stored as Datoms in the database).
+;; The value is of a type appropriate for the attribute, following its schema type: a string, a long, and so forth.
+
+;; The variables, `?e`, `?gid`, and `?name` are special; the leading `?` is important.
+;; These are _query variables_.  A query variable may be _bound_ to a specific value or _unbound_.
+
+;; At it's core, Datomic is looking for _solutions_; each solution has a specific bound value for
+;; each query variable.
+;; Once a solution is found, Datomic generates a single result in the result set, then it
+;; continues looking for further solutions.
+
 ;; When an unbound variable is matched against a Datom, it binds to the value at that position (the entity,
 ;; attribute, or value) in the Datom.
 
 ;; When a bound variable is matched against a Datom, its bound value must actually match the Datom value at
 ;; that position; when it doesn't match, Datomic must backtrack to find a prior clause that can still match.
 
-;; The `_` is a placeholder variable that means "doesn't matter", it can match anything.
-;; Datomic has satisfied the query by finding all :bgg/id attribute values
-;; and all :game/title attribute values across all entities, and returned them ...
-;; but it's something like an outer join in SQL; every :bgg/id matched against every :game/title, which is not very useful.
-
-;; ## Binding Variables
-
-;; Adding an `?id` variable to both clauses _unifies_ a single value of the entity id across _all_ where clauses.
-;; So Datomic searches for all :bgg/id attributes, and for each one found, binds `?id` to the Datomic entity id,
-;; and so finds the matching :game/title (for the same Datomic entity).
-
-;; With all query clauses satisfied, Datomic produces a result; this is defined by the :find clause.
-;; Datomic then backtracks to a point where it can re-bind a variable to the next available value.
-;; The query execution completes when all possible values for all query variables have been exhausted.
-
-;; The trick is to link the :bgg/id and :game/title attributes:
-
-(q '[:find ?game-id ?title
-     :where
-     [?id :bgg/id ?game-id]
-     [?id :game/title ?title]]
-   db)
-
-;; This time, each :bgg/id is matched against the corresponding :game/title. The specific value for
-;; `?id` must be consistent across all where clauses.
-
-;; Here, after Datomic matches an id and a title, it will search for another title for the same entity;
-;; that will fail (:game/title is cardinality one), and Datomic will backtrack to the first clause and
-;; match the next :bgg/id.
-;;
-;; Eventually, it runs out of :bgg/id values and the query is complete.
-
-;; We can make this output more pleasing with a helper:
+;; Having the output be a giant set is somewhat ugly;
+;; Since Datomic simply returns sets and maps and values,we can make this output more pleasing with a helper:
 
 (defn tq [query & more]
   (-> (apply q query more)
@@ -86,14 +66,17 @@
 ;; Now we can get _tabular_ query results.  Of course, that's useful in a Clerk notebook, not
 ;; in a real application.
 
-(tq '[:find ?game-id ?title
+(tq '[:find ?e ?gid ?name
      :where
-     [?id :bgg/id ?game-id]
-     [?id :game/title ?title]]
+     [?e :release/name ?name]
+     [?e :release/gid ?gid]]
    db)
+
+;; Now we have orderly rows and columns.
 
 ;; ## Missing Attributes
 
+#_
 (tq '[:find ?game-id ?title ?summary
       :where
       [?id :bgg/id ?game-id]
@@ -112,6 +95,9 @@
 ;; Datomic will then backtrack to the first clause, where it will match a new
 ;; :bgg/id and try again.  The results are only for queries where it can simultaneously satisfy _all_
 ;; of the query clauses, and that's just a single entity in this case.
+
+#_
+(comment
 
 ;; ## Defaults For Missing Attributes
 
@@ -280,3 +266,4 @@
 ;; all attributes of the target entity of the relationship.
 
 (tq-by-title db "Tak" '[:game/title {:game/publisher [*]}])
+)
