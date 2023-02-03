@@ -1,4 +1,4 @@
-(ns dgg.common
+(ns datomic-tutorial.common
   (:require [nextjournal.clerk :as clerk]))
 
 (defn ex-messages [^Throwable e]

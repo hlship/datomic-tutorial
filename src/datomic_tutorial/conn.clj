@@ -1,4 +1,4 @@
-(ns dgg.conn
+(ns datomic-tutorial.conn
   (:require [datomic.api :as d]))
 
 ;; Need to have separate Datomic transactor running:

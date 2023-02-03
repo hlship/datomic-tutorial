@@ -1,9 +1,9 @@
 ;; # Datomic Queries
 
 ^{:nextjournal.clerk/toc true}
-(ns dgg.notebook.queries
-  (:require [dgg.conn :as conn :refer [conn]]
-            [dgg.common :refer [report-exception]]
+(ns datomic-tutorial.notebook.queries
+  (:require [datomic-tutorial.conn :as conn :refer [conn]]
+            [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
 

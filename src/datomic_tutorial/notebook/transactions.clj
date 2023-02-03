@@ -4,11 +4,11 @@
 
 ^{:nextjournal.clerk/toc true}
 
-(ns dgg.notebook.transactions
-  (:require [dgg.app :as app]
-            [dgg.conn :refer [conn]]
+(ns datomic-tutorial.notebook.transactions
+  (:require [datomic-tutorial.app :as app]
+            [datomic-tutorial.conn :refer [conn]]
             [datomic.api :as d :refer [q]]
-            [dgg.notebook.queries :refer [tq tq-by-title]]
+            [datomic-tutorial.notebook.queries :refer [tq tq-by-title]]
             [nextjournal.clerk :as clerk]))
 
 ;; Once again, we'll start with a clean slate.
