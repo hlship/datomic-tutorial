@@ -1,9 +1,12 @@
 (ns datomic-tutorial.clerk
-  (:require [nextjournal.clerk :as clerk]))
+  (:require
+    [datomic-tutorial.conn :as conn]
+    [nextjournal.clerk :as clerk]))
 
 (clerk/serve! {:port        7778
                :browse?     false
                :watch-paths ["src"]})
+(conn/startup)
 
 (comment
   (clerk/clear-cache!)
