@@ -1,19 +1,26 @@
 ;; # Basic Datomic Queries
 
+;; We'll be using the MusicBrainz database covering 1968-1973.
+
+;; ![MBrainz Relationships](https://github.com/Datomic/mbrainz-sample/raw/master/relationships.png)
+
+;; The [full schema](https://github.com/Datomic/mbrainz-sample/wiki/Schema) describes all the attributes and
+;; relationships available to query.
+
 ^{:nextjournal.clerk/toc true}
-(ns datomic-tutorial.notebook.queries
+(ns datomic-tutorial.notebook.basic-queries
   (:require [datomic-tutorial.conn :as conn :refer [conn]]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
 
-;; ## Get a database from the Datomic connection
+;; The first step is to get a database from the Datomic connection:
 
 (def db (d/db conn))
 
-;; A Database is a value.  We can query this database to our heart's content and get consistent values, taking
-;; as long as we want, and regardless of what transactions other clients are performing.  The entire database
-;; as a _lazy loaded_ single immutable value.
+;; A Database is a value.  We can query this database to our heart's content and get consistent outputs, taking
+;; as long as we want, and regardless of what transactions other clients are performing - it's an immutable snapshot
+;; of the evolving Datomic database.
 
 ;; ## Simple Query
 
@@ -30,20 +37,20 @@
 
 ;; So let's break down what the above code does.
 ;; A query consists of a list of clauses; each group of clauses is preceded by a keyword to define which type
-;; of clauses follow; the basic query is three :find clauses followwed by two :where clauses.
+;; of clauses follow; the basic query is three :find clauses followed by two :where clauses.
 
 ;; :find clauses identify what will be returned on each successful query: here, the result will be
-;; the Datomic entity id, the release's global id (gid), and the release's name.
+;; the Datomic entity id, the release's global id, and the release's name.
 
-;; Datomic is a database of Datoms, which is quite different that a traditional SQL rows-and-columns database.
-;; Instead of thinking of a single record for each entity stored in the database, think if a set of keys-and-values
+;; Datomic is a database of Datoms, which is quite different from a traditional SQL rows-and-columns database.
+;; Instead of thinking of a single record for each entity stored in the database, think in terms of a set of keys-and-values
 ;; for each entity.  A Datom is one key/value pair for a specific entity, and everything builds up from there.
-;; A Datom consist of ordered slots; the first slot is the _entity_,
+;; A Datom consists of ordered slots; the first slot is the _entity_,
 ;; followed by the _attribute_, and then the _value_.
 
 ;; Datomic queries operate by matching the values in the Datoms against the query's :where clauses.
 
-;; The entity is the Datomic-provided id, a long.  These entity ids are the real primary keys inside Datomic, though
+;; The entity is the Datomic-provided id, a long.  These entity ids are the true primary keys inside Datomic, though
 ;; other attributes may be defined as [unique](https://docs.datomic.com/on-prem/schema/schema.html#db-unique),
 ;; and serve as alternate entity keys.
 
@@ -55,7 +62,7 @@
 ;; The attribute value is of a type appropriate for the attribute, according the attribute's schema type: a string, a long, and so forth.
 
 ;; The variables, `?e`, `?gid`, and `?name` are special; the leading `?` is important.
-;; These are _query variables_.  A query variable may be _bound_ to a specific value, or be _unbound_.
+;; These are _query variables_.  A query variable may be _bound_ to a specific value, but will initially be _unbound_.
 
 ;; When an unbound variable is matched against a Datom, it binds the variable to the value at that position (the entity,
 ;; attribute, or value) in the Datom.
@@ -70,7 +77,6 @@
 ;; continues looking for further solutions. This approach, where query variables are bound to values across multiple :where clauses,
 ;; is called _unification_.
 
-
 ;; ## Getting Tabular Results
 
 ;; Datomic returns a set, each value in the set is a vector of the values from the :find clauses.  That's not so pleasant
@@ -84,7 +90,7 @@
     clerk/table))
 
 ;; Converting the set into a vector and passing it to `clerk/table` lets Clerk do some smart formatting, as an HTML table;
-;; Clerk still limits who many rows are initially presented.
+;; Clerk still limits how many rows are initially presented.
 
 (tq '[:find ?e ?gid ?name
       :where
@@ -99,7 +105,7 @@
 
 ;; ## Map Queries
 
-;; Generally, queries composed by humans are in the list form we've seen; however the same results can be accomplished
+;; Generally, queries composed by humans are in the list form we've used so far; however the same results can be accomplished
 ;; using a map form:
 
 (tq '{:find [?e ?gid ?name]
@@ -114,7 +120,7 @@
 ;; ## Map Results
 
 ;; So far, we've seen that Datomic queries return a set  of vectors; each vector is populated using the :find clauses.
-;; In most cases, we'd prefer to see a set of maps; this is accomplished with :keys clauses:
+;; In most cases, we'd prefer to have the individual results organized as map; this is accomplished with :keys clauses:
 
 
 (tq '[:find ?e ?gid ?name
@@ -171,12 +177,13 @@
 ;; Once a solution is found and added to the results, Datomic will keep working, looking for other solutions.  When all possibilities
 ;; are exhausted, the query execution is complete.
 
-;; Navigating these relationships can get verbose and tedius; shortly well see alternate methods to gather related data across
+;; Navigating these relationships can get verbose and tedious; shortly well see alternate methods to gather related data across
 ;; relationships.
 
-;; ## Inputs
+;; ## Query Inputs
 
-;; Hardcoding a track name into our query is not ideal; it would be nice to be able to pass a value into the query from outside.
+;; Hardcoding a track name into our query is not ideal; it would be nice to be able to pass a value into the query from outside,
+;; much like a query parameter in a SQL query.
 
 ;; This is accomplished using an :in clause:
 
@@ -195,7 +202,7 @@
 ;; Here, `?track-name` is bound to "Purple Haze" and the start of query execution,
 ;; and then unifies across the query clauses normally.
 
-;; ## Multi-valued Inputs
+;; ## Multi-valued Query Inputs
 
 ;; Having to query one track name at a time is limiting, and Datomic lets us query against a list of values.
 
@@ -218,16 +225,16 @@
 ;; Matching many individual attributes just to include them in the :find clause can be
 ;; tedious; further, we often want to get back a populated entity _map_ rather than a vector of _values_.
 ;; The pull syntax allows us to just match on Datomic entity id, and gather in
-;; whatever attributes you need.
+;; all needed attributes without writing further :query clauses.
 
-;; Let's build a query that gather's useful information about a release based on its release name.
+;; Let's build a query that gathers useful information about a release based on its release name.
 
 (q '[:find (pull ?e [:db/id :release/name :release/year])
      :in $ ?release-name
      :where [?e :release/name ?release-name]]
   db "Meddle")
 
-;; The `pull` clause extracts data and yields a map; we still get back sequence of solutions; each solution is a vector
+;; The `pull` clause extracts data and yields a map; we still get back a sequence of solutions; each solution is a vector
 ;; of one value, and the value is the map created by `pull`.
 
 ;; > You can provide multiple `pull`s, but each query variable may only appear in a single
@@ -237,11 +244,11 @@
 ;; to explore, so let's first set up a helper function.
 
 (defn tq-by-release-name
-  [db title pattern]
+  [db release-name pattern]
   (->> (q '[:find (pull ?e pull-pattern)
             :in $ ?release-name pull-pattern
             :where [?e :release/name ?release-name]]
-         db title pattern)
+         db release-name pattern)
     ;; Each pull results in a single map inside a vector, so un-nest the map.
     (mapv first)
     clerk/table))
@@ -255,15 +262,15 @@
 
 ;; ### Relationships
 
-;; That's seems like an awfully large number of releases for a single album.  Maybe it is on different media?
+;; That's seems like an awfully large number of releases for a single album.  Maybe they are on different media?
 
 (tq-by-release-name db "Meddle" [:db/id :release/name :release/year :release/media])
 
 ;; Datomic has followed the relationship to the media entity (each release may be on many media).
-;; In fact, it has recursively pulled the tracks for each medium.  This is something to watch out for:
+;; In fact, it has recursively pulled the tracks for each media entity.  This is something to watch out for:
 ;; `pull` may pull more than you really want!
 
-;; That's more data than we desire, so let's be more specific about what to extract from the media entity:
+;; That's more data than we desire, so let's be specific about what to extract from the media entity:
 
 (tq-by-release-name db "Meddle" [:db/id
                                  :release/name
@@ -292,7 +299,7 @@
 ;; the different media - vinyl and 12 inch vinyl.
 
 ;; An interesting side note about Datomic enums is that you can use the :db/ident value interchangeably with
-;; the entity id in query clauses.
+;; the enum's entity id in query clauses.
 
 ;; Let's find all the releases where the :medium/format was :medium.format/vinyl12.
 
@@ -304,8 +311,8 @@
       [?m :medium/format :medium.format/vinyl12]]
   db)
 
-;; When Datomic sees a keyword in an attribute slot, it expects to locate an enum with that ident, matching the keyword
-;; value against the enum value's :db/ident attribute.
+;; When Datomic sees a keyword in an Datom slot, it expects to locate an enum entity for that keyword, matching the keyword
+;; value against the enum's :db/ident attribute.
 
 ;; Code typos can be dangerous, as Datomic will throw an exception if it can't find a matching enum entity:
 
@@ -318,10 +325,43 @@
         [?m :medium/format :medium.formt/vinyl12]]
     db))
 
-;; ### Attribute Options
+;; ### Reverse Attributes
 
-;; One thing we can do with pull expressions is replace an attribute id with a vector that
-;; provides more details on what to do with that attribute id.
+;; So far, we've seen navigating relationship forwards; from an entity containing a ref attribute, to an entity
+;; that's referenced - whether the cardinality of the attribute was one or many.  Datomic lets us work backwards as well.
+
+;; This query uses the relationship :track/artists to show all the tracks for the named artists.
+
+(tq '[:find ?artist-name ?track-name
+      :keys :artist-name :track-name
+      :in $ [?artist-name ...]
+      :where
+      [?a :artist/name ?artist-name]
+      [?t :track/artists ?a]
+      [?t :track/name ?track-name]]
+  db ["Pink Floyd" "Wings"])
+
+;; Using pull syntax, we can start with the artist and work backwards to the track names.
+
+(tq '[:find (pull ?a [:artist/name {:track/_artists [:track/name]}])
+      :in $ [?artist-name ...]
+      :where
+      [?a :artist/name ?artist-name]]
+  db ["Pink Floyd" "Wings"])
+
+;; The leading `_` in :track/_artists informs Datomic to work the relationship backwards, from the artist to the
+;; track.
+
+;; ### Attribute Pull Options
+
+;; There's still much more to pull syntax.  Next up, we can replace a keyword that identifies an attribute with
+;; a vector; the first term in the vector is the attribute, and additional key/value pairs in the vector
+;; provide configuration details on what to do with that attribute.
+
+
+;; #### :as option
+
+;; For example, to change the key used in the result map, use the :as option:
 
 (tq-by-release-name db "Atom Heart Mother"
   [:db/id
@@ -330,7 +370,50 @@
 
 ;; > It appears that :db/id can't be renamed using :as?
 
-;; The :as option renames the key used when constructing the entity map.
+;; #### :limit option
+
+;; You don't always need _all_ the data, the :limit option cut down.  This query gets just the just 10 track names
+;; for each artist.
+
+(tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 10] [:track/name]}])
+      :in $ [?artist-name ...]
+      :where
+      [?a :artist/name ?artist-name]]
+  db ["Pink Floyd" "Wings"])
+
+;; You can also combine options:
+
+(tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 5 :as :tracks] [:track/name]}])
+      :in $ [?artist-name ...]
+      :where
+      [?a :artist/name ?artist-name]]
+  db ["Pink Floyd" "Wings"])
+
+
+;; #### :default option
+
+;; Attributes for entities are usually optional.  In a SQL database, missing column values
+;; will be a null, or a column-specific default (usually applied when a row is inserted).
+;; In Datomic, the Datom is simply missing and can't be matched.
+
+;; Paul McCartney is still active, there is no :artist/endYear attribute for Paul, so a query
+;; that selects :artist/endYear will simply not have a key in the selected map:
+
+(tq-by-release-name db "McCartney"
+  [:release/name
+   :release/year
+   {:release/artists [:artist/name :artist/endYear]}])
+
+;; In this case, a :default option can be used on the :artist/endYear attribute, to provide a value
+;; when no such attribute exists:
+
+(tq-by-release-name db "McCartney"
+  [:release/name
+   :release/year
+   {:release/artists [:artist/name
+                      [:artist/endYear :default "Still Active"]]}])
+
+;; Using nil for the default should not be used, as the result is no different than for a missing attribute; nil values are skipped.
 
 ;; ### Wildcards
 
@@ -341,9 +424,8 @@
 
 ;; The `*` pattern matches all _attributes_ for each entity.
 ;; In most cases, entity refs are not expanded, and appear as a map with a lone :db/id key.
-;; :release/media is a special case, it is defined as a [component entity](https://docs.datomic.com/on-prem/schema/schema.html#db-iscomponent), so it is expanded in
-;; all its detail.
-
+;; :release/media is a special case, it is defined as a [component entity](https://docs.datomic.com/on-prem/schema/schema.html#db-iscomponent),
+;; so it is expanded in all its detail.
 
 ;; The `*` wildcard can also be used when navigating into a relationship, where it selects
 ;; all attributes of the target entity of the relationship.
@@ -353,31 +435,130 @@
                                         :release/year
                                         {:release/media [*]}])
 
+;; ## Collection Queries
 
-;; ## Missing Attributes
+;; Normally, a query returns a set of query results, and each result is a vector of values defined by :find clauses.
+;; For the occasional query where there's just one :find clause, you can indicate that you just want the values by
+;; using the `[<attribute-name ...]` syntax:
 
-;; Attributes for entities are usually optional.  In a SQL approach, missing column values
-;; get a null value, or a column-specific default.  In Datomic, the Datom is simply missing
-;; and can't be matched.
+(q '[:find [?track-name ...]
+      :in $ [?artist-name ...]
+      :where
+      [?a :artist/name ?artist-name]
+      [?t :track/artists ?a]
+      [?t :track/name ?track-name]]
+  db ["Pink Floyd" "Led Zeppelin"])
 
-;; Paul McCartney is still active, there is no :artist/endYear for Paul, so a query
-;; that selects :artist/endYear will simply not have a key in the selected map:
+;; Notice that the result here is just a vector of track names, not a vector _of vectors_ of a track name.
 
-(tq-by-release-name db "McCartney"
-  [:release/name
-   :release/year
-   {:release/artists [:artist/name :artist/endYear]}])
+;; ## Single Tuple Queries
 
-;; > Clerk doesn't do a good job of rendering these nested maps as of this writing. Perhaps that will improve in the future.
+;; Similar to a collection query, you may want to reduce the results to a single tuple (vector of values);
+;; Datomic recognizes this and returns a single vector of the values.
 
-;; In this case, a :default option can be used for the field, to provide a value
-;; when no such attribute exists:
+(q '[:find [?year ?month ?day]
+   :in $ ?name
+   :where [?artist :artist/name ?name]
+   [?artist :artist/startDay ?day]
+   [?artist :artist/startMonth ?month]
+   [?artist :artist/startYear ?year]]
+  db "Jimi Hendrix")
 
-(tq-by-release-name db "McCartney"
-  [:release/name
-   :release/year
-   {:release/artists [:artist/name
-                      [:artist/endYear :default "Still Active"]]}])
+;; Even if the query _would_ return multiple results, query execution ceases after the first result:
+
+(q '[:find [?year ?month ?day]
+     :in $
+     :where
+     [?artist :artist/startDay ?day]
+     [?artist :artist/startMonth ?month]
+     [?artist :artist/startYear ?year]]
+  db)
+
+;; This query matches _all_ artists, and returns the start date for _some_ artist.
+
+;; ## Single Value Queries
+
+;; And, in the most extreme case, you may expect your query to return a single value and stop.
+
+
+(q '[:find ?year .
+     :in $ ?name
+     :where [?artist :artist/name ?name]
+     [?artist :artist/startYear ?year]]
+  db "Jimi Hendrix")
+
+;; The `.` after `?year` essentially says "stop after one value".
+
+;; ## Aggregate Functions
+
+;; Datomic is not limited to just returning the values directly as stored in Datoms;
+;; it has a number of built-in [aggregate](https://docs.datomic.com/on-prem/query/query.html#aggregates)
+;; functions that can be used to transform the attribute values.
+
+;; For example, to find the longest and shortest tracks for a particular artist, one can use the `min` and `max` aggregates.
+
+(tq '[:find (min ?dur) (max ?dur)
+      :keys :min :max
+      :in $ ?artist-name
+      :where
+      [?a :artist/name ?artist-name]
+      [?t :track/artists ?a]
+      [?t :track/duration ?dur]]
+  db "Pink Floyd")
+
+;; So the shortest track is about 40 seconds, and the longest track is about 23 minutes - as much as will fit on one side of
+;; a vinyl LP.
+
+;; With a little work, we can break these results out by year:
+
+(tq '[:find ?year (min ?dur) (max ?dur)
+      :keys :year :min :max
+      :in $ ?artist-name
+      :where
+      [?a :artist/name ?artist-name]
+      [?t :track/artists ?a]
+      [?t :track/duration ?dur]
+      [?medium :medium/tracks ?t]
+      [?release :release/media ?medium]
+      [?release :release/year ?year]]
+  db "Pink Floyd")
+
+;; Because `?year` is a :find clause, the solution for a given year includes the `?dur` values for just that year.
+;; There's a complex interaction between the :find clauses and the :where clauses that define what a solution is, and
+;; for aggregates, what set of values are factored into the aggregate.
+
+;; In any case, I'm not seeing a pattern here.  Let's see the median track lengths as well, and then graph it all!
+
+(let [results (q '[:find ?year (min ?dur) (max ?dur)  (median ?dur)
+                   :keys :year :min :max :median
+                   :in $ ?artist-name
+                   :where
+                   [?a :artist/name ?artist-name]
+                   [?t :track/artists ?a]
+                   [?t :track/duration ?dur]
+                   [?medium :medium/tracks ?t]
+                   [?release :release/media ?medium]
+                   [?release :release/year ?year]]
+                db "Pink Floyd")
+      values (mapcat (fn [{:keys [year] :as datum}]
+                       (for [k [:min :max :median]]
+                         {:year year
+                          :type k
+                          :minutes (quot (k datum) 60000)}))
+               results)]
+  (clerk/vl
+    {:data {:values values}
+     :width 500
+     :title "Pink Floyd Track Lengths"
+     :mark :line
+     :encoding {:x {:field :year}
+                :y {:field :minutes
+                    :type :quantitative}
+                :color {:field :type}}}))
+
+;; Looks like Pink Floyd really liked to fill an album side for a couple of years before going a bit more
+;; "radio friendly".
+
 
 ;; ## Timeouts
 
