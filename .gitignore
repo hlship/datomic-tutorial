@@ -4,3 +4,6 @@
 datomic-pro*
 datomic
 transactor.properties
+/node_modules/
+package*.json
+target/
