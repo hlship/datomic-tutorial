@@ -9,3 +9,5 @@
 (set! *warn-on-reflection* true)
 
 (trace :startup true)
+
+(require 'datomic-tutorial.clerk)
