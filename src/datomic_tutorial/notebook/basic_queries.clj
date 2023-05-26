@@ -9,7 +9,7 @@
 
 ^{:nextjournal.clerk/toc true}
 (ns datomic-tutorial.notebook.basic-queries
-  (:require [datomic-tutorial.conn :as conn :refer [conn]]
+  (:require [datomic-tutorial.conn :refer [conn]]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
@@ -139,7 +139,7 @@
 
 ;; MusicBrainz isn't just about albums; it covers all kinds of media and all kinds of releases of those media.
 ;; So an album might be a release on vinyl, or on CD. And a release may not be an album, it might be a live performance
-;; on film, or broadcast on TV.
+;; on film, or a broadcast on TV.
 ;; The MusicBrainz schema identifies that a release has a relationship to a medium, and from there to a track.
 ;;
 ;; We can start with a particular track name, and find all the releases for that track.
@@ -160,10 +160,10 @@
 
 ;; Expanding from there, `[?r :release/media ?m]` finds every release `?r` that contains any matched medium `?m`.
 
-;; Notice that not all query variables have to appear as a :find clause; `?r` and `?m` are used to link tracks to mediums
-;; and then to releases, but aren't part of the query results.
+;; Notice that not all query variables have to appear in the :find clause; `?r` and `?m` are used to link tracks to mediums
+;; and then to releases, but aren't part of the query results[^order].
 
-;; > The order in which :query clauses are listed doesn't affect the set of found solutions; what may change is the order
+;; [^order]: The order in which :query clauses are listed doesn't affect the set of found solutions; what may change is the order
 ;; of results, and the [execution time](https://docs.datomic.com/on-prem/query/query-executing.html#clause-order).
 ;; In general, put the most specific :query clauses, those that will match the fewest Datoms, first.
 
@@ -199,7 +199,7 @@
 
 ;; The :in clause identifies where data for the query comes from.  The `db` is, by convention, the first clause, and
 ;; **must** be given the name `$`.
-;; Here, `?track-name` is bound to "Purple Haze" and the start of query execution,
+;; Here, `?track-name` is bound to "Purple Haze" at the start of query execution,
 ;; and then unifies across the query clauses normally.
 
 ;; ## Multi-valued Query Inputs
@@ -235,9 +235,9 @@
   db "Meddle")
 
 ;; The `pull` clause extracts data and yields a map; we still get back a sequence of solutions; each solution is a vector
-;; of one value, and the value is the map created by `pull`.
+;; of one value, and the value is the map created by `pull`[^pulls].
 
-;; > You can provide multiple `pull`s, but each query variable may only appear in a single
+;; [^pulls]: You can provide multiple `pull`s, but each query variable may only appear in a single
 ;; :find clause, or an ArrayIndexOutOfBoundsException is thrown.
 
 ;; There's [a lot more to pull syntax](https://docs.datomic.com/on-prem/query/pull.html#pull-pattern-grammar),
@@ -289,6 +289,7 @@
 ;; have a unique identity in :db/ident attribute; this is normally a qualified keyword. We're more interested
 ;; in that ident than in the numeric entity id, so we can select that instead:
 
+
 (tq-by-release-name db "Meddle" [:db/id
                                  :release/name
                                  :release/year
@@ -299,7 +300,12 @@
 ;; the different media - vinyl and 12 inch vinyl.
 
 ;; An interesting side note about Datomic enums is that you can use the :db/ident value interchangeably with
-;; the enum's entity id in query clauses.
+;; the enum's entity id in query clauses.  Any time Datomic sees a keyword when it expects a entity id (normally, a
+;; 64 bit long) it resolves the keyword to an entity (and entity id) using the :db/ident attribute[^ids].
+
+;; [^ids]: This has actually been happening all along; the attributes in the second column of each where clause
+;; is supposed to be the attribute's id, and Datomic resolves the keword to an id using a :db/ident lookup; when attributes
+;; are defined in the schema, they are given a unique :db/ident value.
 
 ;; Let's find all the releases where the :medium/format was :medium.format/vinyl12.
 
@@ -325,7 +331,7 @@
         [?m :medium/format :medium.formt/vinyl12]]
     db))
 
-;; ### Reverse Attributes
+;; ### Reverse Relationships
 
 ;; So far, we've seen navigating relationship forwards; from an entity containing a ref attribute, to an entity
 ;; that's referenced - whether the cardinality of the attribute was one or many.  Datomic lets us work backwards as well.
@@ -339,7 +345,7 @@
       [?a :artist/name ?artist-name]
       [?t :track/artists ?a]
       [?t :track/name ?track-name]]
-  db ["Pink Floyd" "Wings"])
+  db ["Pink Floyd" "The Rolling Stones"])
 
 ;; Using pull syntax, we can start with the artist and work backwards to the track names.
 
@@ -372,14 +378,16 @@
 
 ;; #### :limit option
 
-;; You don't always need _all_ the data, the :limit option cut down.  This query gets just the just 10 track names
-;; for each artist.
+;; You don't always need _all_ the data, the :limit option cuts down how many results are returned.
+;; This query gets just the just 10 track names for each artist:
 
 (tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 10] [:track/name]}])
       :in $ [?artist-name ...]
       :where
       [?a :artist/name ?artist-name]]
   db ["Pink Floyd" "Wings"])
+
+;; When :limit isn't specified, it defaults to 1000.  A :limit of nil is dangerous - it means no limit whatever.
 
 ;; You can also combine options:
 
@@ -442,14 +450,16 @@
 ;; using the `[<attribute-name ...]` syntax:
 
 (q '[:find [?track-name ...]
-      :in $ [?artist-name ...]
-      :where
-      [?a :artist/name ?artist-name]
-      [?t :track/artists ?a]
-      [?t :track/name ?track-name]]
+     :in $ [?artist-name ...]
+     :where
+     [?a :artist/name ?artist-name]
+     [?t :track/artists ?a]
+     [?t :track/name ?track-name]]
   db ["Pink Floyd" "Led Zeppelin"])
 
 ;; Notice that the result here is just a vector of track names, not a vector _of vectors_ of a track name.
+;; All our previous queries returned a set of results and each result was itself either a vector of values, or a map
+;; derived from the matched entity.
 
 ;; ## Single Tuple Queries
 
@@ -457,11 +467,12 @@
 ;; Datomic recognizes this and returns a single vector of the values.
 
 (q '[:find [?year ?month ?day]
-   :in $ ?name
-   :where [?artist :artist/name ?name]
-   [?artist :artist/startDay ?day]
-   [?artist :artist/startMonth ?month]
-   [?artist :artist/startYear ?year]]
+     :in $ ?name
+     :where
+     [?artist :artist/name ?name]
+     [?artist :artist/startDay ?day]
+     [?artist :artist/startMonth ?month]
+     [?artist :artist/startYear ?year]]
   db "Jimi Hendrix")
 
 ;; Even if the query _would_ return multiple results, query execution ceases after the first result:
@@ -529,7 +540,7 @@
 
 ;; In any case, I'm not seeing a pattern here.  Let's see the median track lengths as well, and then graph it all!
 
-(let [results (q '[:find ?year (min ?dur) (max ?dur)  (median ?dur)
+(let [results (q '[:find ?year (min ?dur) (max ?dur) (median ?dur)
                    :keys :year :min :max :median
                    :in $ ?artist-name
                    :where
@@ -540,12 +551,11 @@
                    [?release :release/media ?medium]
                    [?release :release/year ?year]]
                 db "Pink Floyd")
-      values (mapcat (fn [{:keys [year] :as datum}]
-                       (for [k [:min :max :median]]
-                         {:year year
-                          :type k
-                          :minutes (quot (k datum) 60000)}))
-               results)]
+      values (for [{:keys [year] :as datum} results
+                   k [:min :max :median]]
+               {:year year
+                :type k
+                :minutes (quot (k datum) 60000)})]
   (clerk/vl
     {:data {:values values}
      :width 500
@@ -554,7 +564,8 @@
      :encoding {:x {:field :year}
                 :y {:field :minutes
                     :type :quantitative}
-                :color {:field :type}}}))
+                :color {:field :type}
+                :strokeDash {:field :type}}}))
 
 ;; Looks like Pink Floyd really liked to fill an album side for a couple of years before going a bit more
 ;; "radio friendly".
