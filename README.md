@@ -3,21 +3,24 @@
 ## Setup
 
 Follow the [Keith's Instructions](https://nubank.atlassian.net/wiki/spaces/DAT/pages/262853820615/How+To+Easily+Run+Datomic+Locally)
-to download Datomic Pro and the MBrainz database.
+to download Datomic Pro and the MBrainz database; note that *Datomic is Now Free* and the Datomic transactor can be downloaded
+from without licensing; see [Get Datomic](https://docs.datomic.com/pro/getting-started/get-datomic.html) for the latest version.
 
-Untar the MBrainz database backup into the current directory.
+Setup steps:
 
-Create a `datomic` symlink to the Datomic Pro directory.
-
-Create a `transactor.properties` by copying `datomic/config/samples/dev-transactor-template.properties`, then editing it to add the license key.
+* Make sure you are using Java 11
+* `curl https://datomic-pro-downloads.s3.amazonaws.com/1.0.6733/datomic-pro-1.0.6733.zip -O`
+* `unzip datomic-pro-1.0.6733.zip -d .`
+* `ln -sf datomic-pro-1.0.6733 datomic`
+* `curl -s https://s3.amazonaws.com/mbrainz/datomic-mbrainz-1968-1973-backup-2017-07-20.tar | tar xv`
 
 Start the transactor:
 
-    datomic/bin/transactor `pwd`/transactor.properties
+    bin/start-transactor
 
-Restore the database (this takes only a few seconds):
+In a separate window, restore the database (this takes only a few seconds):
 
-    datomic/bin/datomic restore-db file://`pwd`/mbrainz-1968-1973 datomic:dev://localhost:4334/mbrainz-1968-1973
+    bin/restore-db
 
 Datomic is operated in local dev mode; the H2 database files are in the directory `datomic/data/db`.
 

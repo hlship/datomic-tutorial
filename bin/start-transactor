@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+datomic/bin/transactor -Ddatomic.printConnectionInfo=true config/samples/dev-transactor-template.properties
