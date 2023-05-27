@@ -8,7 +8,7 @@ from without licensing; see [Get Datomic](https://docs.datomic.com/pro/getting-s
 
 Setup steps:
 
-* Make sure you are using Java 11
+* Make sure you are using Java 11 or better
 * `curl https://datomic-pro-downloads.s3.amazonaws.com/1.0.6733/datomic-pro-1.0.6733.zip -O`
 * `unzip datomic-pro-1.0.6733.zip -d .`
 * `ln -sf datomic-pro-1.0.6733 datomic`
