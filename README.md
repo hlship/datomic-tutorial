@@ -25,3 +25,6 @@ In a separate window, restore the database (this takes only a few seconds):
 Datomic is operated in local dev mode; the H2 database files are in the directory `datomic/data/db`.
 
 
+Finally, start a REPL; this will start [Clerk](https://github.com/nextjournal/clerk) and open a new browser tab.
+
+_More to come, but next version of Clerk will simplify getting to one of the pages._

@@ -5,7 +5,7 @@
     [nextjournal.clerk :as clerk]))
 
 (clerk/serve! {:port 7778
-               :browse? false
+               :browse? true
                :watch-paths ["src"]})
 (conn/startup)
 
