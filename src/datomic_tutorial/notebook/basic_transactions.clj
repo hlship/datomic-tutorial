@@ -68,11 +68,11 @@
 ;; - the assert/retract flag (true normally, but false for retractions)
 
 ;; There are _three_ Datoms, rather than two, because Datomic _reifies_ transactions - it stores a transaction entity
-;; along with the other entities and attributes added or modified in the transaction.  A transaction is just another
+;; along with the other entities and attributes added or modified in the transaction[^reify].  A transaction is just another
 ;; kind of Datomic entity, one that has an attribute to define the timestamp of the transaction.  Every Datom
 ;; in the transaction is linked to the transaction entity, even itself.
 
-;; > In traditional databases, a transaction is ephemeral - there might be a data structure used to coordinate the locks
+;; [^reify]: In traditional databases, a transaction is ephemeral - there might be a data structure used to coordinate the locks
 ;; and such needed to process a transaction, but that is all discarded once the transaction is committed.  In Datomic,
 ;; transactions leave a specific trace behind.
 
