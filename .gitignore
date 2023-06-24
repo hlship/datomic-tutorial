@@ -7,3 +7,4 @@ transactor.properties
 /node_modules/
 package*.json
 target/
+/backups/
