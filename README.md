@@ -6,13 +6,9 @@ Follow the [Keith's Instructions](https://nubank.atlassian.net/wiki/spaces/DAT/p
 to download Datomic Pro and the MBrainz database; note that *Datomic is Now Free* and the Datomic transactor can be downloaded
 from without licensing; see [Get Datomic](https://docs.datomic.com/pro/getting-started/get-datomic.html) for the latest version.
 
-Setup steps:
+One time download and setup (takes a few minutes):
 
-* Make sure you are using Java 11 or better
-* `curl https://datomic-pro-downloads.s3.amazonaws.com/1.0.6733/datomic-pro-1.0.6733.zip -O`
-* `unzip datomic-pro-1.0.6733.zip -d .`
-* `ln -sf datomic-pro-1.0.6733 datomic`
-* `curl -s https://s3.amazonaws.com/mbrainz/datomic-mbrainz-1968-1973-backup-2017-07-20.tar | tar xv`
+    bin/setup
 
 Start the transactor:
 
@@ -27,4 +23,5 @@ Datomic is operated in local dev mode; the H2 database files are in the director
 
 Finally, start a REPL; this will start [Clerk](https://github.com/nextjournal/clerk) and open a new browser tab.
 
-_More to come, but next version of Clerk will simplify getting to one of the pages._
+In the browser tab, open one of the files under `notebook` such as
+`src/datomic_tutorial/notebook/basic_queries.clj`.
