@@ -379,7 +379,7 @@
 ;; #### :limit option
 
 ;; You don't always need _all_ the data, the :limit option cuts down how many results are returned.
-;; This query gets just the just 10 track names for each artist:
+;; This query gets just the first 10 track names for each artist:
 
 (tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 10] [:track/name]}])
       :in $ [?artist-name ...]
@@ -391,7 +391,9 @@
 
 ;; You can also combine options:
 
-(tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 5 :as :tracks] [:track/name]}])
+(tq '[:find (pull ?a [:artist/name {[:track/_artists :limit 5
+                                     :as :tracks]
+                                    [:track/name]}])
       :in $ [?artist-name ...]
       :where
       [?a :artist/name ?artist-name]]
@@ -447,7 +449,7 @@
 
 ;; Normally, a query returns a set of query results, and each result is a vector of values defined by :find clauses.
 ;; For the occasional query where there's just one :find clause, you can indicate that you just want the values by
-;; using the `[<attribute-name ...]` syntax:
+;; using the `[?variable ...]` syntax:
 
 (q '[:find [?track-name ...]
      :in $ [?artist-name ...]
@@ -459,7 +461,7 @@
 
 ;; Notice that the result here is just a vector of track names, not a vector _of vectors_ of a track name.
 ;; All our previous queries returned a set of results and each result was itself either a vector of values, or a map
-;; derived from the matched entity.
+;; derived from the matched entity, but here it is just a single _attribute_ from the entity.
 
 ;; ## Single Tuple Queries
 
