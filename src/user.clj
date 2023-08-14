@@ -1,7 +1,9 @@
 (ns user
-  (:require [net.lewisship.trace :refer [trace] :as trace]))
+  (:require
+    [clj-commons.pretty.repl :as repl]
+    [net.lewisship.trace :refer [trace] :as trace]))
 
-(require 'io.aviso.logging.setup)
+(repl/install-pretty-exceptions)
 
 (trace/setup-default)
 
