@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -exuo pipefail
 
-curl https://datomic-pro-downloads.s3.amazonaws.com/1.0.6733/datomic-pro-1.0.6733.zip -O
-unzip datomic-pro-1.0.6733.zip -d .
-ln -sf datomic-pro-1.0.6733 datomic
+export VER=1.0.6735
+
+curl https://datomic-pro-downloads.s3.amazonaws.com/$VER/datomic-pro-$VER.zip -O
+unzip datomic-pro-$VER.zip -d .
+ln -sf datomic-pro-$VER datomic
 curl -s https://s3.amazonaws.com/mbrainz/datomic-mbrainz-1968-1973-backup-2017-07-20.tar | tar xv
