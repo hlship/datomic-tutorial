@@ -2,7 +2,7 @@
 
 set -exuo pipefail
 
-export VER=1.0.6735
+export VER=1.0.7021
 
 curl https://datomic-pro-downloads.s3.amazonaws.com/$VER/datomic-pro-$VER.zip -O
 unzip datomic-pro-$VER.zip -d .

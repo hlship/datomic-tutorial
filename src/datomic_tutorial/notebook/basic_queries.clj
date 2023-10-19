@@ -7,8 +7,8 @@
 ;; The [full schema](https://github.com/Datomic/mbrainz-sample/wiki/Schema) describes all the attributes and
 ;; relationships available to query.
 
-^{:nextjournal.clerk/toc true}
 (ns datomic-tutorial.notebook.basic-queries
+  {:nextjournal.clerk/toc true}
   (:require [datomic-tutorial.conn :refer [conn]]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q]]
