@@ -3,4 +3,4 @@
          org.clj-commons/pretty      {:mvn/version "2.2"}
          io.github.hlship/trace      {:mvn/version "v1.0"}
          io.aviso/logging            {:mvn/version "1.0"}
-         io.github.nextjournal/clerk {:mvn/version "0.15.957"}}}
+         io.github.nextjournal/clerk {:git/sha "8b804e7c40f6e61cf65218e7d017e5864c559400"}}}
