@@ -1,6 +1,5 @@
 (ns datomic-tutorial.clerk
   (:require
-    [datomic-tutorial.conn :as conn]
     [babashka.fs :as fs]
     [nextjournal.clerk :as clerk]
     [nextjournal.clerk.home :as home]))
@@ -8,10 +7,8 @@
 (reset! home/!notebooks (map str (fs/glob "src/datomic_tutorial" "**.{clj,md}")))
 
 (clerk/serve! {:port           7778
-               :browse?        true
+               :browse?        false
                :watch-paths    ["src"]})
-(conn/startup)
-
 (comment
   (clerk/clear-cache!)
 

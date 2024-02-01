@@ -2,7 +2,7 @@
 
 (ns datomic-tutorial.notebook.using-functions
   (:require [clojure.string :as str]
-            [datomic-tutorial.conn :refer [conn]]
+            [datomic-tutorial.conn :as conn]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q transact]]
             [nextjournal.clerk :as clerk]))
@@ -18,6 +18,8 @@
 ;; for such cases.
 
 ;; Here's an overly simple case where we just want to create a new artist.
+
+(def conn (conn/connect))
 
 (def new-artist (d/function '{:lang   :clojure
                               :params [db artist-name]

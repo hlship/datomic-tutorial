@@ -5,7 +5,7 @@
 ^{:nextjournal.clerk/toc true}
 
 (ns datomic-tutorial.notebook.basic-transactions
-  (:require [datomic-tutorial.conn :refer [conn]]
+  (:require [datomic-tutorial.conn :as conn]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :refer [q transact]]
             [nextjournal.clerk :as clerk]))
@@ -19,7 +19,12 @@
 ;; which "removes" an attribute, is actually about adding a special Datom that indicates
 ;; the retraction.
 
+
 ;; ## Transacting a new entity
+
+;; Create a connection to the MBrainz database.
+
+(def conn (conn/connect))
 
 ;; Let's start by adding an entirely new entity to the database; since this notebook should be repeatable,
 ;; we'll also define a helper that adds a unique random suffix to strings.
@@ -30,8 +35,8 @@
 ;; new database.
 
 (def result-1 @(transact conn
-                 [[:db/add "new-artist" :artist/name (r "Datomic Funkadelic")]
-                  [:db/add "new-artist" :artist/gid (random-uuid)]]))
+                         [[:db/add "new-artist" :artist/name (r "Datomic Funkadelic")]
+                          [:db/add "new-artist" :artist/gid (random-uuid)]]))
 
 ;; Transactions are executed asynchronously.  Unlike queries, which are processed entirely in the client
 ;; application's process, transactions are sent to the database's Transactor process.

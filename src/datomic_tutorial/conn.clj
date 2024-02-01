@@ -2,31 +2,23 @@
   (:require [datomic.api :as d]))
 
 ;; Need to have separate Datomic transactor running:
-(def db-uri "datomic:dev://localhost:4334/mbrainz-1968-1973")
+(def db-uri "datomic:dev://localhost:4334/")
 
-(defonce conn nil)
+(defonce *connections (atom {}))
 
-(defn startup
+(defn connect
+  "Connect to a database; default is the mbrainz database."
+  ([]
+   (connect "mbrainz-1968-1973"))
+  ([db-name]
+   (let [uri (str db-uri db-name)]
+     (if-let [conn (get @*connections uri)]
+       conn
+       (let [new-conn (d/connect uri)]
+         (swap! *connections assoc uri new-conn)
+         new-conn)))))
+
+(defn fresh-connection
+  "Connect to a fresh, empty database."
   []
-  (if-not conn
-    (do
-      (alter-var-root #'conn (fn [_]
-                               (d/connect db-uri)))
-      :started)
-    :already-started))
-
-(defn shutdown
-  []
-  (if conn
-    (do
-      (d/release conn)
-      (alter-var-root #'conn (constantly nil))
-      :stopped)
-    :not-started))
-
-(comment
-  (startup)
-  conn
-  (shutdown)
-
-  )
+  (connect (str "db-" (random-uuid))))

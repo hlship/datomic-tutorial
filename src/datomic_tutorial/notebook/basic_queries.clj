@@ -9,14 +9,14 @@
 
 (ns datomic-tutorial.notebook.basic-queries
   {:nextjournal.clerk/toc true}
-  (:require [datomic-tutorial.conn :refer [conn]]
+  (:require [datomic-tutorial.conn :refer [connect]]
             [datomic-tutorial.common :refer [report-exception]]
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
 
 ;; The first step is to get a database from the Datomic connection:
 
-(def db (d/db conn))
+(def db (d/db (connect)))
 
 ;; A Database is a value.  We can query this database to our heart's content and get consistent outputs, taking
 ;; as long as we want, and regardless of what transactions other clients are performing - it's an immutable snapshot
@@ -264,6 +264,7 @@
 
 ;; That's seems like an awfully large number of releases for a single album.  Maybe they are on different media?
 
+^{::clerk/width :full}
 (tq-by-release-name db "Meddle" [:db/id :release/name :release/year :release/media])
 
 ;; Datomic has followed the relationship to the media entity (each release may be on many media).
@@ -272,6 +273,7 @@
 
 ;; That's more data than we desire, so let's be specific about what to extract from the media entity:
 
+^{::clerk/width :full}
 (tq-by-release-name db "Meddle" [:db/id
                                  :release/name
                                  :release/year
@@ -289,7 +291,7 @@
 ;; have a unique identity in :db/ident attribute; this is normally a qualified keyword. We're more interested
 ;; in that ident than in the numeric entity id, so we can select that instead:
 
-
+^{::clerk/width :full}
 (tq-by-release-name db "Meddle" [:db/id
                                  :release/name
                                  :release/year
