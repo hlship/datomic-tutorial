@@ -140,15 +140,11 @@
 ;; the existing entity.
 
 @(d/transact conn
-             [{:artifact/group "org.clj-commons"
+             [{:artifact/identifier ["org.clj-commons" "pretty" "2.2.1"]
+                :artifact/group "org.clj-commons"
                :artifact/name "pretty"
                :artifact/version "2.2.1"
                :db/doc "Updated"}])
-
-
-@(d/transact conn
-             [{:artifact/identifier ["org.clj-commons" "pretty" "2.2.0"]
-               :db/doc              "Upserted"}])
 
 (d/q
   '[:find (pull ?id [*])
