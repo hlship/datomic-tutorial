@@ -1,4 +1,4 @@
-;; Schema Tuples
+;; # Schema Tuples
 
 ;; Storing multiple values in a single attribute.
 
@@ -42,11 +42,13 @@
 ;; We can then query for the results:
 
 (d/q
-  '[:find (pull ?id [:db/id :artifact/group :artifact/name :artifact/version])
+  '[:find (pull ?id [*])
     :in $ ?group
     :where [?id :artifact/group ?group]]
   (d/db conn)
   "org.clojure")
+
+;; Refer to [basic queries](basic_queries) for a refresher on Datomic queries.
 
 ;; We can add additional artifacts as well:
 
@@ -60,14 +62,96 @@
               deref
               :db-after))
 
-;; We're de-refing the result, to ensure that the writes will be visible, then using the :db-after key
-;; in the response, which is the database value _after_ the new data was transacted.
+;; We're derefing the transaction result, to block until the writes have completed, then using the :db-after key
+;; in the result, which is the database value _after_ the new data was transacted.
 
-;; And those will be visible in our query:
-
+;; Now, both versions of the `clojure` artifact, as well as the `core.async` artifact, are available to be queried:
 (d/q
-  '[:find (pull ?id [:db/id :artifact/group :artifact/name :artifact/version])
+  '[:find (pull ?id [*])
     :in $ ?group
     :where [?id :artifact/group ?group]]
-  db-1
-  "org.clojure")
+  db-1 "org.clojure")
+
+;; **NOTE:** You may see additional copies of these, because of how Clerk operates -
+;; when refreshing the page, especially after any change,
+;; it may have re-executed the `transact` code more than once.
+
+;; ## Preventing Duplication with Tuples
+
+;; We have a problem; _every_ time we transact a new artifact, an entirely new entity is created:
+
+(def db-2 (-> (d/transact conn
+                          [{:artifact/group   "org.clojure"
+                            :artifact/name    "clojure"
+                            :artifact/version "1.11.0"}])
+              deref
+              :db-after))
+
+;; The `transact` was successful, and quietly created a new entity:
+
+(d/q
+  '[:find (pull ?id [*])
+    :in $ ?group ?name
+    :where [?id :artifact/group ?group]
+    [?id :artifact/name ?name]]
+  db-2 "org.clojure" "clojure")
+
+;; Datomic always operates by _upserting_; that is, it first attempts to find an existing entity to modify, before creating
+;; an entirely new entity.  If you specify a :db/id, Datomic will use that to identify the entity.
+;; Alternately, you may specify an attribute that provides
+;; [unique identity](https://docs.datomic.com/pro/schema/identity.html#unique-identities); such an attribute
+;; uniquely identifies the entity.
+
+;; However, for our artifact entity, we don't _have_ a single unique attribute ... it's the _combination_
+;; of group, name, and version that is unique.
+
+;; One approach would be to build a string combining group, name, and version, say `"org.clojure:clojure:1.11.0"`
+;; and define a corresponding identity attribute for it.  However, this becomes the responsibility of
+;; the client to build the string consistently, and use it to identify existing entities.
+
+;; Instead, we can define a _tuple_ attribute that combines these attribute values.
+
+@(d/transact conn
+             [{:db/ident       :artifact/identifier
+               :db/cardinality :db.cardinality/one
+               :db/unique      :db.unique/identity
+               :db/valueType   :db.type/tuple
+               :db/tupleAttrs  [:artifact/group :artifact/name :artifact/version]}])
+
+;; This new attribute is assigned when a new entity is created.  Let's create another artifact:
+
+@(d/transact conn
+             [{:artifact/group "org.clj-commons"
+               :artifact/name "pretty"
+               :artifact/version "2.2.1"}])
+
+;;
+
+(d/q
+  '[:find (pull ?id [*])
+    :in $ ?group
+    :where [?id :artifact/group ?group]]
+  (d/db conn) "org.clj-commons")
+
+;; You'll see that the new entity has an :artifact/identifier attribute whose value
+;; is a vector of the three attributes.
+
+;; If we transact a change with the same group, name, and version, Datomic will find
+;; the existing entity.
+
+@(d/transact conn
+             [{:artifact/group "org.clj-commons"
+               :artifact/name "pretty"
+               :artifact/version "2.2.1"
+               :db/doc "Updated"}])
+
+
+@(d/transact conn
+             [{:artifact/identifier ["org.clj-commons" "pretty" "2.2.0"]
+               :db/doc              "Upserted"}])
+
+(d/q
+  '[:find (pull ?id [*])
+    :in $ ?group
+    :where [?id :artifact/group ?group]]
+  (d/db conn) "org.clj-commons")
