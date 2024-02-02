@@ -9,16 +9,17 @@
 (defn connect
   "Connect to a database; default is the mbrainz database."
   ([]
-   (connect "mbrainz-1968-1973"))
-  ([db-name]
-   (let [uri (str db-uri db-name)]
-     (if-let [conn (get @*connections uri)]
-       conn
-       (let [new-conn (d/connect uri)]
-         (swap! *connections assoc uri new-conn)
-         new-conn)))))
+   (connect (str db-uri "mbrainz-1968-1973")))
+  ([uri]
+   (if-let [conn (get @*connections uri)]
+     conn
+     (let [new-conn (d/connect uri)]
+       (swap! *connections assoc uri new-conn)
+       new-conn))))
 
 (defn fresh-connection
   "Connect to a fresh, empty database."
   []
-  (connect (str "db-" (random-uuid))))
+  (let [uri (str db-uri (random-uuid))]
+    (d/create-database uri)
+    (connect uri)))

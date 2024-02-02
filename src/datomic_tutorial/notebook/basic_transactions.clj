@@ -22,9 +22,13 @@
 
 ;; ## Transacting a new entity
 
-;; Create a connection to the MBrainz database.
+;; Before we can do anything else, we need a connection to the MBrainz database.
 
 (def conn (conn/connect))
+
+;; Transacting data occurs using a _connection_, not a _database_; A database
+;; is a read-only snapshot of the Datomic database at some point in time;
+;; a connection is a connection to the Datomic data and Datomic transactor.
 
 ;; Let's start by adding an entirely new entity to the database; since this notebook should be repeatable,
 ;; we'll also define a helper that adds a unique random suffix to strings.
@@ -119,7 +123,7 @@
 
 ;; ## Transacting Maps
 
-;; It's very useful to understand this lowest level for submitting transaction data as Datoms, but this
+;; It's very useful to understand this lowest level for submitting transaction data as Datoms, but following such an
 ;; approach can be quite verbose. In many situations the alternate syntax, based on maps, is more readable and
 ;; straight forward.
 
@@ -193,10 +197,12 @@
 
 (:tx-data result-4)
 
-;; It's worth diving down into what Datomic does with the keyword :medium.format/dat.
+;; It's worth diving down into what Datomic does with the keyword :medium.format/dat [^dat].
 ;; It's assigned to attribute :medium/format which is of type ref, a reference to another entity.
 ;; As with queries, when you attempt to plug a keyword in as the value of a ref attribute,
 ;; Datomic will perform a query against the :db/ident attribute to locate the entity id.
+
+;; [^dat]: "dat" is Digital Audio Tape, a high-quality medium replaced by DVDs and streaming.
 
 ;; In the MusicBrainz schema, when the :medium/format schema attribute was transacted, a long list of :medium.format/...
 ;; entities were also transacted; these are used as enumerated values.
@@ -254,7 +260,7 @@
 ;; In general, changes you make to Datomic simply overlay existing attribute values ... but there are times
 ;; when you need to be careful about race conditions; the canonical example is adjusting the balance of a bank
 ;; account.  In Datomic, there's a compare-and-set operation that allows you to make changes to an attribute
-;; only if it is in a known state
+;; only if it is in a known state.
 
 ;; Instead of :db/add, we'll use :db/cas, and specify both the expected value and the new value:
 
