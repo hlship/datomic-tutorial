@@ -17,9 +17,9 @@
        (swap! *connections assoc uri new-conn)
        new-conn))))
 
-(defn fresh-connection
-  "Connect to a fresh, empty database."
+(defn ephemeral-connection
+  "Connect to a fresh, empty in-memory database."
   []
-  (let [uri (str db-uri (random-uuid))]
+  (let [uri (str "datomic:mem://fresh-" (random-uuid))]
     (d/create-database uri)
-    (connect uri)))
+    (d/connect uri)))
