@@ -217,11 +217,11 @@
     db-4 "org.clj-commons")
 
 ;; However, [upsert behavior with tuples](https://forum.datomic.com/t/troubles-with-upsert-on-composite-tuples/1355/3) is still
-;; not something of a work in progress ... there's a inherent conflict between "you never have to compose a composite tuple" and
+;; something of a work in progress ... there's a inherent conflict between "you never have to compose a composite tuple" and
 ;; "you must supply the identity attribute" ... this conflict is yet to be resolved by the Datomic team.
 
 ;; That is, since you are not expected to _build_ :artifact/identifier yourself, even if your code already knows
-;; the group, artifact name, and version. Instead, you can query the database for the :artifact/identifier to include in
+;; the group, artifact name, and iversion. Instead, you can query the database for the :artifact/identifier to include in
 ;; the transaction to identify the existing entity.  However, you could just as easily query for the :db/id and use _that_
 ;; to trigger an update.
 
@@ -295,4 +295,4 @@
 
 ;; Notice this time that all the previously transacted artifacts are included in the response, not just the
 ;; ones created since the :artifact/identifier attribute was added. This query gets the attributes directly,
-;; it doesn't use the :artifact/identifier tuple attribute ... it just _happens_ to build a tuple in the same structure.
+;; it doesn't use the :artifact/identifier tuple attribute ... it just _coincidentally_ happens to build a tuple in the same structure.
