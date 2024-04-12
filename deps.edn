@@ -1,6 +1,6 @@
 {:paths ["src" "resources"]
  :deps  {com.datomic/peer            {:mvn/version "1.0.7075"}
-         org.clj-commons/pretty      {:mvn/version "2.2.1"}
-         io.github.hlship/trace      {:mvn/version "v1.0"}
+         org.clj-commons/pretty      {:mvn/version "2.5.1"}
+         io.github.hlship/trace      {:mvn/version "1.2"}
          io.aviso/logging            {:mvn/version "1.0"}
          io.github.nextjournal/clerk {:git/sha "c741fcd021c333d6d3fb2ba000cc04bb5d3e8251"}}}
