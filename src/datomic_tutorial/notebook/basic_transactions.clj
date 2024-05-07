@@ -42,7 +42,8 @@
                          [[:db/add "new-artist" :artist/name (r "Datomic Funkadelic")]
                           [:db/add "new-artist" :artist/gid (random-uuid)]]))
 
-;; Transactions are executed asynchronously.  Unlike queries, which are processed entirely in the client
+;; From any client's perspective, Datomic transactions are executed asynchronously.
+;; Unlike queries, which are processed entirely in the client
 ;; application's process, transactions are sent to the database's Transactor process.
 ;; The `transact` function returns a _future_, and the `@` de-references the future, blocking until the transaction
 ;; is executed and new Datoms are persisted to the data store.
@@ -52,7 +53,8 @@
 
 ;; What is "new-artist" here?  It's obviously a string, when true entity ids are longs; this identifies it as a tempid,
 ;; a placeholder value used to link related data in the transaction.  Datomic will generate a unique
-;; entity id for this string, then use it everywhere it appears.  This ensures that the same entity id is used for both
+;; entity id for this string, then use it everywhere the string appears where a Datomic entity id is expected.
+;; This ensures that the same entity id is used for both
 ;; attributes, and allows the Transactor to be responsible for assigning the entity id.
 
 ;; The result is a map with the following keys:
