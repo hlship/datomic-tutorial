@@ -48,10 +48,13 @@
 ;; The `transact` function returns a _future_, and the `@` de-references the future, blocking until the transaction
 ;; is executed and new Datoms are persisted to the data store.
 
-;; The transaction data is a series of tuples; in this case, each one is a :db/add, followed by an entity id,
-;; an attribute id, and the value for that entity and attribute.
+;; The transaction data is a series of tuples; the first slot in the tuple identifies the type -
+;; in this case, each one is a :db/add  - followed by an entity id,
+;; an attribute id, and the value for that entity and attribute.  This is the most fundamental way
+;; to add new entities, or to add or modify attributes of existing entities.
 
-;; What is "new-artist" here?  It's obviously a string, when true entity ids are longs; this identifies it as a tempid,
+;; What is "new-artist" here?  It's obviously a string, when Datomic requires entity ids to be longs.
+;; A string used where an entity id is expected identifies the string as a tempid,
 ;; a placeholder value used to link related data in the transaction.  Datomic will generate a unique
 ;; entity id for this string, then use it everywhere the string appears where a Datomic entity id is expected.
 ;; This ensures that the same entity id is used for both
@@ -81,11 +84,11 @@
 ;; There are _three_ Datoms, rather than two, because Datomic _reifies_ transactions - it stores a transaction entity
 ;; along with the other entities and attributes added or modified in the transaction[^reify].  A transaction is just another
 ;; kind of Datomic entity, one that has an attribute to define the timestamp of the transaction.  Every Datom
-;; in the transaction is linked to the transaction entity, even itself.
+;; in the transaction is linked to the transaction entity, even the transaction entity itself.
 
 ;; [^reify]: In traditional databases, a transaction is ephemeral - there might be a data structure used to coordinate the locks
 ;; and such needed to process a transaction, but that is all discarded once the transaction is committed.  In Datomic,
-;; transactions leave a specific trace behind.
+;; transactions leave a specific trace behind, not in a log file, but in the database itself.
 
 ;; In raw Datoms, attribute ids are stored as numbers, somewhat obscuring their identity.  It is easier for humans to see
 ;; the keywords that map to those entity ids. Since the Datomic schema is queryable in Datomic itself,
