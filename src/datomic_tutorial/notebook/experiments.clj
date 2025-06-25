@@ -87,7 +87,7 @@
            :in $ ?repo-name
            :where
            [?repo-id :repo/name ?repo-name]
-           [?repo :repo/issues ?issue-id]
+           [?repo-id :repo/issues ?issue-id]
            [?issue-id :issue/message ?issue-message]]
          db repo-name)))
 
@@ -110,8 +110,23 @@
 ;; Another way:
 
 (def after-4 (transact conn
-                       [{:repo/_issues [:repo/name "pedestal/pedestal"]
+                       [{:repo/_issues  [:repo/name "pedestal/pedestal"]
                          :issue/message "third issue"}]
                        ))
 
 (repo-and-issues after-4 "pedestal/pedestal")
+
+;; Can you set an attribute to nil?  Nope, you get :db.error/nil-value Nil is not a legal value
+
+(let [db       (d/db conn)
+      result   (d/q '[:find [?issue-id ?message]
+                      :in $ ?repo-name
+                      :where [?repo-id :repo/name ?repo-name]
+                      [?repo-id :repo/issues ?issue-id]
+                      [?issue-id :issue/message ?message]]
+                    db "pedestal/pedestal")
+      [issue-id message] #trace/result result
+      db-after (transact conn
+                         [[:db/retract issue-id :issue/message message]])]
+  (repo-and-issues db-after "pedestal/pedestal"))
+

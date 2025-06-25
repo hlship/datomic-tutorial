@@ -237,10 +237,13 @@
 ;; The `pull` clause extracts data and yields a map; we still get back a sequence of solutions; each solution is a vector
 ;; of one value, and the value is the map created by `pull`[^pulls].
 
+;; As you can see, the last argument to `pull` is a vector of what attributes, of the release entity, to include,
+;; but this example is just the most basic case; we'll shortly see more complex pulls.
+
 ;; [^pulls]: You can provide multiple `pull`s, but each query variable may only appear in a single
 ;; :find clause, or an ArrayIndexOutOfBoundsException is thrown.
 
-;; There's [a lot more to pull syntax](https://docs.datomic.com/on-prem/query/pull.html#pull-pattern-grammar),
+;; There's [a lot more to pull syntax](https://docs.datomic.com/query/query-pull.html#pull-grammar),
 ;; to explore, so let's first set up a helper function.
 
 (defn tq-by-release-name
@@ -436,7 +439,7 @@
 
 ;; The `*` pattern matches all _attributes_ for each entity.
 ;; In most cases, entity refs are not expanded, and appear as a map with a lone :db/id key.
-;; :release/media is a special case, it is defined as a [component entity](https://docs.datomic.com/on-prem/schema/schema.html#db-iscomponent),
+;; :release/media is a special case, it is defined as a [component entity](https://docs.datomic.com/schema/schema-reference.html#db-iscomponent),
 ;; so it is expanded in all its detail.
 
 ;; The `*` wildcard can also be used when navigating into a relationship, where it selects
@@ -507,10 +510,21 @@
 ;; ## Aggregate Functions
 
 ;; Datomic is not limited to just returning the values directly as stored in Datoms;
-;; it has a number of built-in [aggregate](https://docs.datomic.com/on-prem/query/query.html#aggregates)
+;; it has a number of built-in [aggregate](https://docs.datomic.com/query/query-data-reference.html#aggregates)
 ;; functions that can be used to transform the attribute values.
 
-;; For example, to find the longest and shortest tracks for a particular artist, one can use the `min` and `max` aggregates.
+;; A useful aggregate is `count`, which identifies how many bindings of a query variable occurred.
+
+(q '[:find (count ?r) .
+      :in $ ?name
+      :where [?artist :artist/name ?name]
+      [?r :release/artists ?artist]]
+   db "Deep Purple")
+
+;; There are 44 release entities for artist "Deep Purple".
+
+;; Other common aggregates can perform basic statistics; for example, to find the longest and shortest tracks for a particular artist,
+;; we can use the `min` and `max` aggregates.
 
 (tq '[:find (min ?dur) (max ?dur)
       :keys :min :max

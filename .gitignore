@@ -8,3 +8,8 @@ transactor.properties
 package*.json
 target/
 /backups/
+/.nrepl-port
+.idea
+.cpcache
+.clerk
+*.iml
