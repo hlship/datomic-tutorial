@@ -1,10 +1,59 @@
 #!/usr/bin/env bash
 
-set -exuo pipefail
+set -euo pipefail
 
-export VER=1.0.7556
+VER=1.0.7556
+DATOMIC_SHA=c3ef35201864577d346dfb547ac69d70cde6cdf6
 
-curl https://datomic-pro-downloads.s3.amazonaws.com/$VER/datomic-pro-$VER.zip -O
-unzip datomic-pro-$VER.zip -d .
-ln -sf datomic-pro-$VER datomic
-curl -s https://s3.amazonaws.com/mbrainz/datomic-mbrainz-1968-1973-backup-2017-07-20.tar | tar xv
+MBRAINZ_TAR="datomic-mbrainz-1968-1973-backup-2017-07-20.tar"
+MBRAINZ_URL="https://s3.amazonaws.com/mbrainz/$MBRAINZ_TAR"
+MBRAINZ_SHA=5c13eb5b2bc33478b97a2b9087cecf1f4ee13377
+
+ZIP_FILE="datomic-pro-$VER.zip"
+NEED_DOWNLOAD=true
+
+if [ -f "$ZIP_FILE" ]; then
+  ACTUAL_SHA=$(shasum "$ZIP_FILE" | awk '{print $1}')
+  if [ "$ACTUAL_SHA" = "$DATOMIC_SHA" ]; then
+    echo "Datomic zip already downloaded and SHA matches, skipping download."
+    NEED_DOWNLOAD=false
+  else
+    echo "Datomic zip exists but SHA mismatch (expected $DATOMIC_SHA, got $ACTUAL_SHA), re-downloading."
+  fi
+fi
+
+if [ "$NEED_DOWNLOAD" = true ]; then
+  curl https://datomic-pro-downloads.s3.amazonaws.com/$VER/datomic-pro-$VER.zip -O
+  ACTUAL_SHA=$(shasum "$ZIP_FILE" | awk '{print $1}')
+  if [ "$ACTUAL_SHA" != "$DATOMIC_SHA" ]; then
+    echo "ERROR: Downloaded file SHA ($ACTUAL_SHA) does not match expected SHA ($DATOMIC_SHA)!"
+    exit 1
+  fi
+  unzip -oq datomic-pro-$VER.zip -d .
+  ln -sf datomic-pro-$VER datomic
+fi
+
+NEED_DOWNLOAD=true
+
+if [ -f "$MBRAINZ_TAR" ]; then
+  ACTUAL_SHA=$(shasum "$MBRAINZ_TAR" | awk '{print $1}')
+  if [ "$ACTUAL_SHA" = "$MBRAINZ_SHA" ]; then
+    echo "MusicBrainz tar already downloaded and SHA matches, skipping download."
+    NEED_DOWNLOAD=false
+  else
+    echo "MusicBrainz tar exists but SHA mismatch (expected $MBRAINZ_SHA, got $ACTUAL_SHA), re-downloading."
+  fi
+fi
+
+if [ "$NEED_DOWNLOAD" = true ]; then
+  curl -s "$MBRAINZ_URL" -O
+  ACTUAL_SHA=$(shasum "$MBRAINZ_TAR" | awk '{print $1}')
+  if [ "$ACTUAL_SHA" != "$MBRAINZ_SHA" ]; then
+    echo "ERROR: Downloaded file SHA ($ACTUAL_SHA) does not match expected SHA ($MBRAINZ_SHA)!"
+    exit 1
+  fi
+fi
+
+tar xf "$MBRAINZ_TAR"
+
+echo "Setup complete."
