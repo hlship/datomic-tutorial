@@ -309,7 +309,7 @@
 ;; 64 bit long) it resolves the keyword to an entity (and entity id) using the :db/ident attribute[^ids].
 
 ;; [^ids]: This has actually been happening all along; the attributes in the second column of each where clause
-;; is supposed to be the attribute's id, and Datomic resolves the keword to an id using a :db/ident lookup; when attributes
+;; are supposed to be the attribute's id, and Datomic resolves the keyword to an id using a :db/ident lookup; when attributes
 ;; are defined in the schema, they are given a unique :db/ident value.
 
 ;; Let's find all the releases where the :medium/format was :medium.format/vinyl12.
@@ -322,7 +322,7 @@
       [?m :medium/format :medium.format/vinyl12]]
   db)
 
-;; When Datomic sees a keyword in an Datom slot, it expects to locate an enum entity for that keyword, matching the keyword
+;; When Datomic sees a keyword in a Datom slot, it expects to locate an enum entity for that keyword, matching the keyword
 ;; value against the enum's :db/ident attribute.
 
 ;; Code typos can be dangerous, as Datomic will throw an exception if it can't find a matching enum entity:
