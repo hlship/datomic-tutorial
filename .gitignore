@@ -13,3 +13,5 @@ target/
 .cpcache
 .clerk
 *.iml 
+!.clj-kondo/config.edn
+.clj-kondo/*
