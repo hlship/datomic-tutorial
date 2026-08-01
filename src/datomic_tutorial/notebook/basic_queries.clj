@@ -1,11 +1,17 @@
 ;; # Basic Datomic Queries
 
-;; We'll be using the MusicBrainz database covering 1968-1973.
+;; We'll be using the [MusicBrainz](https://musicbrainz.org/) database covering 1968-1973.
+;; This is a complex schema that describes all the music published during this period, including information about
+;; artists who created the musib, the albums or individual song 
+;; in great detail ... down to the format of each album or single 
+;; (that is, was the song released on a 78 rpm vinyl album, 8-track cassette tape, or something else).  
+
+;; The following diagram shows the Datomic schema containing this information.
 
 ;; ![MBrainz Relationships](https://github.com/Datomic/mbrainz-sample/raw/master/relationships.png)
 
 ;; The [full schema](https://github.com/Datomic/mbrainz-sample/wiki/Schema) describes all the attributes and
-;; relationships available to query.
+;; relationships available for us to query.
 
 (ns datomic-tutorial.notebook.basic-queries
   {:nextjournal.clerk/toc true}
@@ -14,7 +20,7 @@
             [datomic.api :as d :refer [q]]
             [nextjournal.clerk :as clerk]))
 
-;; The first step is to get a database from the Datomic connection:
+;; In order to perform any queries, the first step is to get a database from the Datomic connection:
 
 (def db (d/db (connect)))
 
@@ -50,7 +56,7 @@
 
 ;; Datomic queries operate by matching the values in the Datoms against the query's :where clauses.
 
-;; The entity is the Datomic-provided id, a long.  These entity ids are the true primary keys inside Datomic, though
+;; The entity is the Datomic-provided id, a 64 bit integer, an unsigned long. These entity ids are the true primary keys inside Datomic, though
 ;; other attributes may be defined as [unique](https://docs.datomic.com/on-prem/schema/schema.html#db-unique),
 ;; and serve as alternate entity keys.
 
@@ -79,7 +85,7 @@
 
 ;; ## Getting Tabular Results
 
-;; Datomic returns a set, each value in the set is a vector of the values from the :find clauses.  That's not so pleasant
+;; Datomic returns a set, where each value in the set is itself a vector of the values from the :find clauses.  That's not so pleasant
 ;; to look at in a Clerk notebook; a little helper function can really improve things.
 
 (defn tq
@@ -171,7 +177,7 @@
 
 ;; So a track named "Purple Haze" appears in all these releases.  Again, we're seeing _unification_ yield
 ;; _solutions_.  Unification ensures that when a value for a query variable, such as `?track`, is established by matching
-;; a Datom in a query clause, the query variable's value is consistent across all the query clauses.
+;; a Datom in a query clause, the query variable's value is consistent across all the remaining query clauses.
 ;; Once all query variables are bound and unified, that's a single solution.
 
 ;; Once a solution is found and added to the results, Datomic will keep working, looking for other solutions.  When all possibilities
@@ -322,7 +328,7 @@
       [?m :medium/format :medium.format/vinyl12]]
   db)
 
-;; When Datomic sees a keyword in a Datom slot, it expects to locate an enum entity for that keyword, matching the keyword
+;; When Datomic sees a keyword in a slot where it expects an entity id, will locate an enum entity for that keyword, matching the keyword
 ;; value against the enum's :db/ident attribute.
 
 ;; Code typos can be dangerous, as Datomic will throw an exception if it can't find a matching enum entity:
@@ -435,6 +441,7 @@
 ;; Datomic queries support wildcards, which are primarily useful when exploring data
 ;; at the REPL:
 
+^{::clerk/width :full}
 (tq-by-release-name db "Led Zeppelin" '[*])
 
 ;; The `*` pattern matches all _attributes_ for each entity.
@@ -445,6 +452,7 @@
 ;; The `*` wildcard can also be used when navigating into a relationship, where it selects
 ;; all attributes of the target entity of the relationship.
 
+^{::clerk/width :full}
 (tq-by-release-name db "Led Zeppelin" '[:db/id
                                         :release/name
                                         :release/year
